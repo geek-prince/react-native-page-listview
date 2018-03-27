@@ -1,30 +1,43 @@
 # react-native-page-listview
+
 对ListView/FlatList的封装,可以很方便的分页加载网络数据,还支持自定义下拉刷新View和上拉加载更多的View.兼容高版本FlatList和低版本ListVIew.组件会根据你使用的react-native的版本自动选择(高版本使用FlatList,低版本使用ListView)
 
 ## 安装
 `npm install react-native-page-listview --save`
 
 ## 如何使用
+
 `下面说明中的'组件'指的就是当前这个'react-native-page-listview'组件.`
+
 首先导入组件
+
 `import PageListView from 'react-native-page-listview';`
 
 ### 1.不分页,不从网络获取数据(用于本地数组数据的展示)
+
 这时你只需要给组件传递一个数组
+
 `let arr=[你要在ListView上展示的数据数组]`
+
 在render方法中使用该组件
+
 ```
 <PageListView 
 	renderRow={this.renderRow} 
 	refresh={this.refresh} 
-/>```
+/>
+```
+
 `renderRow`方法中需要你指定每一行数据的展示View,与`ListView/FlatList`的`renderRow/renderItem`方法相同
+
 ```
 renderRow(rowData,index){
 	return(<View>你的View展示</View>);
 }
 ```
+
 `refresh`方法中指定需要展示数据的数组
+
 ```
 refresh=(callBack)=>{
 	callBack(arr);
@@ -32,7 +45,9 @@ refresh=(callBack)=>{
 ```
 
 ### 2.不分页,从网络获取数据(用于网络数组数据不多,后端接口没有用分页时)
+
 这时与上面使用方法一致,只需要更改一下`refresh`方法
+
 ```
 refresh=(callBack)=>{
 	fetch(url)
@@ -44,11 +59,15 @@ refresh=(callBack)=>{
         });
 }
 ```
+
 以上这两种方式渲染结果如下(没有下拉刷新和上拉更多):
+
 ![没有分页的渲染效果](http://github.jikeclub.com/pageListView/1.gif)
 
 ### 3.从网络获取数据并分页,不自定义上拉刷新,下拉加载更多View(用于数据较多,需要分页请求数据时)
+
 这时你需要给组件一下几个属性`pageLen`,`renderRow`,`refresh`,`loadMore`.
+
 ```
 <PageListView 
 	pageLen={15} 
@@ -57,9 +76,11 @@ refresh=(callBack)=>{
 	loadMore={this.loadMore} 
 />
 ```
+
 `pageLen`指定你每次调用后端分页接口可以获得多少条数据.
 `renderRow`使用方法和上面相同,渲染每一行的展示.
 `refresh`方法会在你组件一开始加载和你下拉刷新时调用,所以你在这个方法中需要将你从后端分页接口的第一页请求返回的数据通过回调传给组件.
+
 ```
 refresh=(callBack)=>{
 	fetch(分页接口url+'?page=1')
@@ -71,7 +92,9 @@ refresh=(callBack)=>{
         });
 }
 ```
+
 `loadMore`方法会在你下拉加载更多时调用,这时除了`callBack`还会传给你另一个参数`page`表示即将要加载的分页数据是第几页,这时你只需要根据`page`把相应第几页的数组数据通过回调传给组件就行.
+
 ```
 loadMore=(page,callback)=>{
 	fetch(分页接口url+'?page='+page)
@@ -83,11 +106,15 @@ loadMore=(page,callback)=>{
 		});
 };
 ```
+
 这种情况下显示的渲染效果为:
+
 ![有分页不自定义的渲染效果](http://github.jikeclub.com/pageListView/2.gif)
 
 ### 4.从网络获取数据并分页,并且自定义下拉刷新,上拉加载更多View
+
 渲染下拉刷新View使用`renderRefreshView`,且此时需要给定它的高度`renderRefreshViewH`,渲染加载更多View使用`renderLoadMore`,渲染没有更多数据的View使用`renderNoMore`.
+
 ```
 <PageListView 
 	pageLen={15} 
@@ -101,6 +128,7 @@ loadMore=(page,callback)=>{
 	renderNoMore={this.renderNoMore}
 />
 ```
+
 ```
 renderRefreshView=()=>{
         return(
@@ -108,6 +136,7 @@ renderRefreshView=()=>{
         );
     };
 ```
+
 ```
 renderLoadMore=()=>{
         return(
@@ -115,6 +144,7 @@ renderLoadMore=()=>{
         );
     };
 ```
+
 ```
 renderNoMore=()=>{
         return(
@@ -122,12 +152,17 @@ renderNoMore=()=>{
         );
     };
 ```
+
 这种情况下显示的渲染效果为:
+
 ![有分页不自定义的渲染效果](http://github.jikeclub.com/pageListView/3.gif)
 
 ## 拓展
+
 如果你想实现更好看更绚丽的下拉刷新效果,可以像下面这样使用`renderRefreshView`.
+
 `pullState`会根据你下拉的状态给你返回相应的字符串:
+
 * `''` : 没有下拉动作时的状态
 * `'pulling'` : 正在下拉并且还没有拉到指定位置时的状态
 * `'pullOk'` : 正在下拉并且拉到指定位置时并且没有松手的状态
@@ -156,10 +191,13 @@ renderRefreshView=(pullState)=>{
         }
     };
 ```
+
 这种情况下显示的渲染效果为:
+
 ![有分页不自定义的渲染效果](http://github.jikeclub.com/pageListView/4.gif)
 
 有时候我们不一定会直接渲染从后端取回来的数据,需要对数据进行一些处理,这时可以在组件中加入`dealWithDataArrCallBack`属性来对数组数据进行一些处理.下面是把从后端取回来的数组进行顺序的颠倒.
+
 ```
 <PageListView 
 	//其他的属性...
