@@ -2,6 +2,10 @@
 
 对ListView/FlatList的封装,可以很方便的分页加载网络数据,还支持自定义下拉刷新View和上拉加载更多的View.兼容高版本FlatList和低版本ListVIew.组件会根据你使用的react-native的版本自动选择(高版本使用FlatList,低版本使用ListView)
 
+github地址: https://github.com/geek-prince/react-native-page-listview
+
+npm地址: https://www.npmjs.com/package/react-native-page-listview
+
 ## 安装
 `npm install react-native-page-listview --save`
 
