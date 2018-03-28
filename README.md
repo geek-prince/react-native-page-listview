@@ -66,8 +66,7 @@ refresh=(callBack)=>{
 
 以上这两种方式渲染结果如下(没有下拉刷新和上拉更多):
 
-![(没有分页的渲染效果)](http://github.jikeclub.com/pageListView/1.gif)
-github上查看不了效果图,请点击这里: http://github.jikeclub.com/pageListView/1.gif
+![(没有分页的渲染效果)](http://github.jikeclub.com/pageListView/s1.gif)
 
 ### 3.从网络获取数据并分页,不自定义上拉刷新,下拉加载更多View(用于数据较多,需要分页请求数据时)
 
@@ -114,9 +113,7 @@ loadMore=(page,callback)=>{
 
 这种情况下显示的渲染效果为:
 
-![(有分页不自定义View的渲染效果)](http://github.jikeclub.com/pageListView/2.gif)
-
-github上查看不了效果图,请点击这里: http://github.jikeclub.com/pageListView/2.gif
+![(有分页不自定义View的渲染效果)](http://github.jikeclub.com/pageListView/s2.gif)
 
 ### 4.从网络获取数据并分页,并且自定义下拉刷新,上拉加载更多View
 
@@ -162,9 +159,7 @@ renderNoMore=()=>{
 
 这种情况下显示的渲染效果为:
 
-![(有分页自定义View的渲染效果)](http://github.jikeclub.com/pageListView/3.gif)
-
-github上查看不了效果图,请点击这里: http://github.jikeclub.com/pageListView/3.gif
+![(有分页自定义View的渲染效果)](http://github.jikeclub.com/pageListView/s3.gif)
 
 ## 拓展
 
@@ -203,9 +198,7 @@ renderRefreshView=(pullState)=>{
 
 这种情况下显示的渲染效果为:
 
-![(有分页自定义复杂下拉刷新View的渲染效果)](http://github.jikeclub.com/pageListView/4.gif)
-
-github上查看不了效果图,请点击这里: http://github.jikeclub.com/pageListView/4.gif
+![(有分页自定义复杂下拉刷新View的渲染效果)](http://github.jikeclub.com/pageListView/s4.gif)
 
 有时候我们不一定会直接渲染从后端取回来的数据,需要对数据进行一些处理,这时可以在组件中加入`dealWithDataArrCallBack`属性来对数组数据进行一些处理.下面是把从后端取回来的数组进行顺序的颠倒.
 

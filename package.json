@@ -1,6 +1,6 @@
 {
   "name": "react-native-page-listview",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "对ListView/FlatList的封装,可以很方便的分页加载网络数据,还支持自定义下拉刷新View和上拉加载更多的View",
   "main": "index.js",
   "scripts": {
