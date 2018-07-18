@@ -6,6 +6,16 @@ github地址: https://github.com/geek-prince/react-native-page-listview
 
 npm地址: https://www.npmjs.com/package/react-native-page-listview
 
+#1.0.3->1.1.0改动/新增:
+```
+    1.增加手动处理数组数据方法,
+    2.父组件重新加载数据后手动刷新数据
+    3.从网络获取数据,数据为空时的渲染界面,
+    4.解决部分手机上界面为空,不显示的问题,(鉴于自定义组件宽高实用性并不大,而且部分手机显示有问题,去除自定义组件宽高,改为自适应)
+    5.对放在scrollView中的支持(放在ScrollView中时则不能上拉刷新,下拉加载更多)
+    6.加入可选属性allLen,对于分页显示时可以指定数据的总条数
+```
+
 ## 安装
 `npm install react-native-page-listview --save`
 
@@ -35,7 +45,7 @@ npm地址: https://www.npmjs.com/package/react-native-page-listview
 `renderRow`方法中需要你指定每一行数据的展示View,与`ListView/FlatList`的`renderRow/renderItem`方法相同
 
 ```
-renderRow(rowData,index){
+renderRow=(rowData,index)=>{
 	return(<View>你的View展示</View>);
 }
 ```
@@ -169,6 +179,8 @@ github上加载不出来或显示有问题,请点击这里: http://github.jikecl
 
 ## 拓展
 
+###下拉刷新进阶
+
 如果你想实现更好看更绚丽的下拉刷新效果,可以像下面这样使用`renderRefreshView`.
 
 `pullState`会根据你下拉的状态给你返回相应的字符串:
@@ -208,6 +220,8 @@ renderRefreshView=(pullState)=>{
 
 github上加载不出来或显示有问题,请点击这里: http://github.jikeclub.com/pageListView/s4.gif
 
+###对数据数组进行处理
+
 有时候我们不一定会直接渲染从后端取回来的数据,需要对数据进行一些处理,这时可以在组件中加入`dealWithDataArrCallBack`属性来对数组数据进行一些处理.下面是把从后端取回来的数组进行顺序的颠倒.
 
 ```
@@ -217,24 +231,62 @@ github上加载不出来或显示有问题,请点击这里: http://github.jikecl
 />
 ```
 
+上面对数组的操作只会在分页请求数据的"上拉刷新"和"下拉加载更多"时触发.有的时候我们可能要在某个点击事件等操作之后对数据数组进行操作,修改.这个时候就可以通过主动调用组件的`changeDataArr`方法来实现.这时需要先对组件进行ref引用
+
+```
+<PageListView 
+	//其他的属性...
+	refs={(r)=>{!this.PL&&(this.PL=r)}}
+/>
+```
+
+然后在执行某个操作时需要修改数组数据时通过主动调用`changeDataArr`方法来实现
+
+```
+this.PL1.changeDataArr((arr)=>{return arr.reverse()});
+```
+
+###手动刷新数据
+这种情况通常用于组件显示数据分类中的某一类的情况,然后父组件中更改了筛选的分类,父组件中获得数组数据需要手动把数据传给组件,并刷新组件,这个时候可以用到`manualRefresh`这个方法,这个方法也需要先像上面一样获取到组件的ref引用.然后在父组件获得数据数组`res`后
+
+```
+this.PL.manualRefresh(res);
+```
+手动刷新组件
+
+###没有一条数据时的渲染
+如果获取到的数据数组为空,可以通过`renderEmpty`方法来渲染这种情况下要显示的View
+
+```
+<PageListView 
+	//其他的属性...
+	renderEmpty={this.renderEmpty}
+/>
+renderEmpty=()=>{return(<View style={[]}>你的View渲染代码</View>);}
+```
+
+###小功能
 另外,`FlatList`中有个属性为`ItemSeparatorComponent`是设置每一行View之间分割的View的,自己觉得不错就写到组件里了,兼容`ListView`.
+
+如果需要把组件放到scrollView中时加入`inScrollView={true}`的属性,但此时便不能使用上拉刷新,下拉加载更多.
 
 ## 属性一览表:
 
-| props | 作用 |
-| :-------------: |:-------------:|
-|renderRow|处理"渲染FlatList/ListView的每一行"的方法|
-|refresh|处理"下拉刷新"或"一开始加载数据"的方法|
-|loadMore|处理"加载更多"的方法|
-|pageLen|每个分页的数据数|
-|dealWithDataArrCallBack|如果需要在用当前后端返回的数组数据进行处理的话,传入回调函数|
-|renderLoadMore|还有数据可以从后端取得时候渲染底部View的方法|
-|renderNoMore|没有数据(数据已经从后端全部加载完)是渲染底部View的方法|
-|renderRefreshView|渲染下拉刷新的View样式|
-|renderRefreshViewH|渲染下拉刷新的View样式的高度|
-|ItemSeparatorComponent|渲染每行View之间的分割线View|
-|height|指定组件宽高,不指定时组件flex:1自适应宽高|
-|width|指定组件宽高,不指定时组件flex:1自适应宽高|
+| props | 作用 |默认值|
+| :-------------: |:-------------:|:-------------:|
+|renderRow|处理"渲染FlatList/ListView的每一行"的方法|null|
+|refresh|处理"下拉刷新"或"一开始加载数据"的方法|null|
+|loadMore|处理"加载更多"的方法|null|
+|pageLen|每个分页的数据数|0|
+|allLen|总的数据条数|0|
+|dealWithDataArrCallBack|如果需要在用当前后端返回的数组数据进行处理的话,传入回调函数|null|
+|renderLoadMore|还有数据可以从后端取得时候渲染底部View的方法|null|
+|renderNoMore|没有数据(数据已经从后端全部加载完)是渲染底部View的方法|null|
+|renderRefreshView|渲染下拉刷新的View样式|null|
+|renderRefreshViewH|渲染下拉刷新的View样式的高度|60|
+|renderEmpty|如果网络获取数据为空时的渲染界面|null|
+|ItemSeparatorComponent|渲染每行View之间的分割线View|null|
+|inScrollView|当前组件是否是放在scrollView中(放在ScrollView中时则不能上拉刷新,下拉加载更多)|false|
 |FlatList/ListView自身的属性|是基于FlatList/ListView,所以可以直接使用他们自身的属性|
 
 `注意:如果屏幕下方有绝对定位的View时,这时组件自适应宽高,下面的一部分内容会被遮挡,这时一个很好的解决方法是在组件下方渲染一个与绝对定位等高的透明View来解决(<View style={{height:你绝对定位View的高度,backgroundColor:'#0000'}}/>).`

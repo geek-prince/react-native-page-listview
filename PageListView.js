@@ -1,3 +1,6 @@
+/**
+ * Created by mac on 2018/6/25.
+ */
 import React, { Component } from 'react';
 import {
     Text,
@@ -24,6 +27,17 @@ const pullStateTextArr={
 //默认动画时长
 const defaultDuration=400;
 
+//1.0.3->1.1.0改动/新增:
+/*
+ 1.手动处理数组数据,
+ 2.父组件重新加载数据后手动刷新数据
+ 2.隐藏当前ListView(放弃这个功能),
+ 3.从网络获取数据,数据为空时的渲染界面,
+ 4.解决部分手机上界面为空,不显示的问题,(鉴于自定义组件宽高实用性并不大,而且部分手机显示有问题,去除自定义组件宽高,改为自适应)(问题可能原因:从flex:1快速的改变为固定宽高时界面渲染会有问题)
+ 5.对放在scrollView中的支持
+ 6.加入可选属性allLen,对于分页显示时可以指定数据的总条数
+ */
+
 export default class PageListView extends Component{
     constructor(props){
         super(props);
@@ -47,12 +61,17 @@ export default class PageListView extends Component{
             page:2,
 
             //通过View自适应的宽高来决定ListView的宽高(或让用户来决定宽高)
-            width:this.props.width||0,
-            height:this.props.height||0,
+            // width:this.props.width||0,
+            // height:this.props.height||0,
+            width:0,
+            height:0,
 
             //下拉的状态
             pullState:'noPull',
             pullAni:new Animated.Value(-this.props.renderRefreshViewH),
+
+            //网络获取的数据是否为空
+            ifDataEmpty:false,
         };
         //创建手势相应者
         this.panResponder = PanResponder.create({
@@ -78,13 +97,18 @@ export default class PageListView extends Component{
         loadMore:null,
         //每个分页的数据数
         pageLen:0,
+        //总的数据条数
+        allLen:0,
+
         //如果父组件中包含绝对定位的View时传入ListView的高度
         //或者可以在父组件底部加入相应高度的透明View
-        height:0,
+        // height:0,
         // width:0,
 
         //如果需要在用当前后端返回的数组数据进行处理的话,传入回调函数
         dealWithDataArrCallBack:null,
+        //如果在进行某个操作后需要对数组数据进行手动处理的话,传入回调函数
+        // changeDataArr:null,
         //渲染每行View之间的分割线View
         ItemSeparatorComponent:null,
         //还有数据可以从后端取得时候渲染底部View的方法
@@ -95,19 +119,29 @@ export default class PageListView extends Component{
         renderRefreshView:null,
         //渲染下拉刷新的View样式的高度
         renderRefreshViewH:60,
+
+        //如果网络获取数据为空时的渲染界面
+        renderEmpty:null,
+
+        //当前组件是否是放在scrollView中(放在ScrollView中时则不能上拉刷新,下拉加载更多)
+        inScrollView:false,
+
+        //是否隐藏当前ListView
+        // ifHide:false,
     };
 
     //取到View自适应的宽高设置给ListView
     onLayout=(event)=>{
+        if(this.state.width&&this.state.height){return}
         let {width:w, height:h} = event.nativeEvent.layout;
         this.setState({width:w,height:h});
     };
 
     render() {
-        let widthS=this.state.width;
-        let heightS=this.state.height;
+        if(this.state.ifDataEmpty&&this.props.renderEmpty){return this.props.renderEmpty()}
+        if(this.props.inScrollView){return this.renderListView()}
         return(
-            <View style={[heightS&&widthS?{width:widthS,height:heightS}:(heightS?{height:heightS,width:'100%'}:(widthS?{width:widthS,flex:1,}:{flex:1})),{zIndex:-99999}]} onLayout={this.onLayout}>
+            <View style={[{flex:1},{zIndex:-99999}]} onLayout={this.onLayout}>
                 <Animated.View ref={aniView=>{this.aniView=aniView}} style={[{transform:[{translateY:this.state.pullAni}]},{width:this.state.width,height:this.state.height+this.props.renderRefreshViewH}]}>
                     {this.props.renderRefreshView?this.props.renderRefreshView(this.state.pullState):this.renderRefreshView()}
                     <View style={[{width:this.state.width,height:this.state.height}]} {...this.panResponder.panHandlers}>
@@ -116,7 +150,6 @@ export default class PageListView extends Component{
                 </Animated.View>
             </View>
         );
-
     }
 
     //ListView/FlatList的渲染
@@ -193,9 +226,11 @@ export default class PageListView extends Component{
         }
     };
 
+
     componentDidMount(){
         this.resetAni();
         this.props.refresh((res)=>{
+            if(!this.dealWithArr(res)){return}
             let len=res.length;
             this.updateData(res,len);
         });
@@ -218,21 +253,48 @@ export default class PageListView extends Component{
         });
     };
 
+    //刷新
+    refreshCommon=(res)=>{
+        if(!this.dealWithArr(res)){return}
+        let len=res.length;
+        this.updateData(res,len);
+        this.setState({page:2,ifShowRefresh:false,pullState:'noPull'});
+        this.resetAni()
+    };
     //下拉刷新
     refresh=()=>{
         this.props.refresh((res)=>{
-            let len=res.length;
-            this.updateData(res,len);
-            this.setState({page:2,ifShowRefresh:false,pullState:'noPull'});
-            this.resetAni()
+            this.refreshCommon(res)
         });
+    };
+    //手动刷新
+    manualRefresh=(res)=>{
+        this.refreshCommon(res);
+    };
+
+    //判断传入的数据是否为数组,或数组是否为空
+    dealWithArr=(res)=>{
+        let isArr=Array.isArray(res);
+        if(!isArr){this.setState({ifDataEmpty:true});console.warn('PageListView的数据源需要是一个数组');return false;}
+        let len=res.length;
+        if(!len){this.setState({ifDataEmpty:true});return false;}
+        return true;
     };
 
     //ListView渲染每一行的cell
     renderRow=(rowData,group,index)=>{
+        let {renderRow,ItemSeparatorComponent,pageLen,allLen}=this.props;
         let notLast=parseInt(index)!==this.state.dataArr.length-1;
-        let ifRenderItemS=this.props.ItemSeparatorComponent&&((this.props.pageLen&&(this.state.canLoad||notLast))||(!this.props.pageLen&&notLast));
-        return (<View>{this.props.renderRow(rowData,index)}{ifRenderItemS&&this.props.ItemSeparatorComponent()}</View>);
+        let ifRenderItemS=false;
+        if(ItemSeparatorComponent){
+            if(allLen){
+                ifRenderItemS=parseInt(index)!==allLen-1;
+            }else {
+                ifRenderItemS=(pageLen&&(this.state.canLoad||notLast))||(!pageLen&&notLast);
+            }
+        }
+        // let ifRenderItemS=this.props.ItemSeparatorComponent&&((this.props.pageLen&&(this.state.canLoad||notLast))||(!this.props.pageLen&&notLast));
+        return (<View>{renderRow(rowData,index)}{ifRenderItemS&&ItemSeparatorComponent()}</View>);
     };
     //FlatList渲染每一行的cell
     renderItem=({item,index})=>{
@@ -273,6 +335,7 @@ export default class PageListView extends Component{
     //更新状态机
     updateData=(res,len,loadMore=false)=>{
         let dataArr=[];
+        let {pageLen,allLen}=this.props;
         if(loadMore){
             for(let i=0;i<len;i++){
                 this.state.dataArr.push(res[i]);
@@ -284,7 +347,17 @@ export default class PageListView extends Component{
         this.setState({
             dataArr:dataArr,
             dataSource:this.props.isListView?this.state.dataSource.cloneWithRows(dataArr):dataArr,
-            canLoad:this.props.pageLen?(len===this.props.pageLen):false,
+            canLoad:allLen?(allLen>this.state.dataArr):(pageLen?(len===pageLen):false),
+        });
+    };
+
+    //如果在进行某个操作后需要对数组数据进行手动处理的话,调用该方法(通过ref来调用refs={(r)=>{!this.PL&&(this.PL=r)}})
+    changeDataArr=(callBack)=>{
+        let arr=JSON.parse(JSON.stringify(this.state.dataArr));
+        let dataArr=callBack(arr);
+        this.setState({
+            dataArr:dataArr,
+            dataSource:this.props.isListView?this.state.dataSource.cloneWithRows(dataArr):dataArr,
         });
     };
 
