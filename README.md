@@ -179,7 +179,7 @@ github上加载不出来或显示有问题,请点击这里: http://github.jikecl
 
 ## 拓展
 
-###下拉刷新进阶
+### 下拉刷新进阶
 
 如果你想实现更好看更绚丽的下拉刷新效果,可以像下面这样使用`renderRefreshView`.
 
@@ -220,7 +220,7 @@ renderRefreshView=(pullState)=>{
 
 github上加载不出来或显示有问题,请点击这里: http://github.jikeclub.com/pageListView/s4.gif
 
-###对数据数组进行处理
+### 对数据数组进行处理
 
 有时候我们不一定会直接渲染从后端取回来的数据,需要对数据进行一些处理,这时可以在组件中加入`dealWithDataArrCallBack`属性来对数组数据进行一些处理.下面是把从后端取回来的数组进行顺序的颠倒.
 
@@ -246,7 +246,8 @@ github上加载不出来或显示有问题,请点击这里: http://github.jikecl
 this.PL1.changeDataArr((arr)=>{return arr.reverse()});
 ```
 
-###手动刷新数据
+### 手动刷新数据
+
 这种情况通常用于组件显示数据分类中的某一类的情况,然后父组件中更改了筛选的分类,父组件中获得数组数据需要手动把数据传给组件,并刷新组件,这个时候可以用到`manualRefresh`这个方法,这个方法也需要先像上面一样获取到组件的ref引用.然后在父组件获得数据数组`res`后
 
 ```
@@ -254,7 +255,8 @@ this.PL.manualRefresh(res);
 ```
 手动刷新组件
 
-###没有一条数据时的渲染
+### 没有一条数据时的渲染
+
 如果获取到的数据数组为空,可以通过`renderEmpty`方法来渲染这种情况下要显示的View
 
 ```
@@ -265,7 +267,8 @@ this.PL.manualRefresh(res);
 renderEmpty=()=>{return(<View style={[]}>你的View渲染代码</View>);}
 ```
 
-###小功能
+### 小功能
+
 另外,`FlatList`中有个属性为`ItemSeparatorComponent`是设置每一行View之间分割的View的,自己觉得不错就写到组件里了,兼容`ListView`.
 
 如果需要把组件放到scrollView中时加入`inScrollView={true}`的属性,但此时便不能使用上拉刷新,下拉加载更多.
