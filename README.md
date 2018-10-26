@@ -6,14 +6,11 @@ github地址: https://github.com/geek-prince/react-native-page-listview
 
 npm地址: https://www.npmjs.com/package/react-native-page-listview
 
-#1.0.3->1.1.0改动/新增:
+#1.1.0->1.2.0改动/新增:
 ```
-    1.增加手动处理数组数据方法,
-    2.父组件重新加载数据后手动刷新数据
-    3.从网络获取数据,数据为空时的渲染界面,
-    4.解决部分手机上界面为空,不显示的问题,(鉴于自定义组件宽高实用性并不大,而且部分手机显示有问题,去除自定义组件宽高,改为自适应)
-    5.对放在scrollView中的支持(放在ScrollView中时则不能上拉刷新,下拉加载更多)
-    6.加入可选属性allLen,对于分页显示时可以指定数据的总条数
+     1.修复从数据为空的界面切换为有数据的界面时的bug
+     2.支持无数据情况下的下拉刷新
+     3.让用户自己决定是否要显示下拉刷新界面(根据大家反馈希望可以自定义是否显示下拉刷新,所以就加入了)在组件数组中加入refreshEnable属性(布尔值)表示
 ```
 
 ## 安装
@@ -273,6 +270,8 @@ renderEmpty=()=>{return(<View style={[]}>你的View渲染代码</View>);}
 
 如果需要把组件放到scrollView中时加入`inScrollView={true}`的属性,但此时便不能使用上拉刷新,下拉加载更多.
 
+如果你需要自己指定是否启用下拉刷新,这时只需要加入属性`refreshEnable={true}`加启用下拉刷新功能了.
+
 ## 属性一览表:
 
 | props | 作用 |默认值|
@@ -290,6 +289,7 @@ renderEmpty=()=>{return(<View style={[]}>你的View渲染代码</View>);}
 |renderEmpty|如果网络获取数据为空时的渲染界面|null|
 |ItemSeparatorComponent|渲染每行View之间的分割线View|null|
 |inScrollView|当前组件是否是放在scrollView中(放在ScrollView中时则不能上拉刷新,下拉加载更多)|false|
+|refreshEnable|当前是否要启用下拉刷新功能(如果用户在父组件给出该参数就以该参数的值为准,没有给出,就按默认)|默认有分页就启用true,没有分页就不启用false|
 |FlatList/ListView自身的属性|是基于FlatList/ListView,所以可以直接使用他们自身的属性|
 
 `注意:如果屏幕下方有绝对定位的View时,这时组件自适应宽高,下面的一部分内容会被遮挡,这时一个很好的解决方法是在组件下方渲染一个与绝对定位等高的透明View来解决(<View style={{height:你绝对定位View的高度,backgroundColor:'#0000'}}/>).`

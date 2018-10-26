@@ -1,21 +1,11 @@
-/**
- * Created by mac on 2018/6/25.
- */
 import React, { Component } from 'react';
-import {
-    Text,
-    View,
-    ListView,
-    FlatList,
-    Dimensions,
-    PanResponder,
-    Animated,
-    Easing,
-    ActivityIndicator,
-} from 'react-native';
+import {Text,View,ListView,FlatList,Dimensions,PanResponder,Animated,Easing,ActivityIndicator} from 'react-native';
+import Styles from 'react-native-gp-style';
+let {s,sf}=new Styles(0);
+
 let PageList=FlatList||ListView;
 //获取屏幕宽高
-let {width:w, height:h}=Dimensions.get('window');
+const {width:w, height:h}=Dimensions.get('window');
 
 //pullState对应的相应的文字说明
 const pullStateTextArr={
@@ -27,20 +17,19 @@ const pullStateTextArr={
 //默认动画时长
 const defaultDuration=400;
 
-//1.0.3->1.1.0改动/新增:
+//1.1.0->1.2.0改动/修复/新增:
 /*
- 1.手动处理数组数据,
- 2.父组件重新加载数据后手动刷新数据
- 2.隐藏当前ListView(放弃这个功能),
- 3.从网络获取数据,数据为空时的渲染界面,
- 4.解决部分手机上界面为空,不显示的问题,(鉴于自定义组件宽高实用性并不大,而且部分手机显示有问题,去除自定义组件宽高,改为自适应)(问题可能原因:从flex:1快速的改变为固定宽高时界面渲染会有问题)
- 5.对放在scrollView中的支持
- 6.加入可选属性allLen,对于分页显示时可以指定数据的总条数
+     1.修复从数据为空的界面切换为有数据的界面时的bug
+     2.支持无数据情况下的下拉刷新
+     3.让用户自己决定是否要显示下拉刷新界面(根据大家反馈希望可以自定义是否显示下拉刷新,所以就加入了)
+     *.缩减renderListView方法中的代码,把style样式的编写方式改为react-native-gp-style
  */
 
 export default class PageListView extends Component{
     constructor(props){
         super(props);
+        let {refreshEnable,pageLen}=this.props;
+        this.refreshEnable=refreshEnable!==undefined?refreshEnable:!!pageLen;
         this.state={
             //DataSource数据源对应的数组数据
             dataArr:[],
@@ -74,13 +63,13 @@ export default class PageListView extends Component{
             ifDataEmpty:false,
         };
         //创建手势相应者
-        this.panResponder = PanResponder.create({
+        this.refreshEnable&&(this.panResponder = PanResponder.create({
             onMoveShouldSetPanResponder: this.onMoveShouldSetPanResponder,
             onPanResponderMove: this.onPanResponderMove,
             onPanResponderRelease: this.onPanResponderRelease,
             onPanResponderTerminate: this.onPanResponderRelease,
             onShouldBlockNativeResponder: ()=>false
-        });
+        }));
         //下拉到什么位置时算拉到OK的状态
         this.pullOkH=parseInt(this.props.renderRefreshViewH*1.5);
         //记录ListView最后一次滚动停止时的y坐标
@@ -126,6 +115,9 @@ export default class PageListView extends Component{
         //当前组件是否是放在scrollView中(放在ScrollView中时则不能上拉刷新,下拉加载更多)
         inScrollView:false,
 
+        //当前是否要启用下拉刷新功能(如果用户在父组件给出该参数就以该参数的值为准,没有给出,就按默认有分页就启用,没有分页就不启用)
+        // refreshEnable:true,
+
         //是否隐藏当前ListView
         // ifHide:false,
     };
@@ -133,97 +125,47 @@ export default class PageListView extends Component{
     //取到View自适应的宽高设置给ListView
     onLayout=(event)=>{
         if(this.state.width&&this.state.height){return}
-        let {width:w, height:h} = event.nativeEvent.layout;
-        this.setState({width:w,height:h});
+        let {width, height} = event.nativeEvent.layout;
+        this.setState({width,height});
     };
 
     render() {
-        if(this.state.ifDataEmpty&&this.props.renderEmpty){return this.props.renderEmpty()}
-        if(this.props.inScrollView){return this.renderListView()}
+        let {renderEmpty,renderRefreshViewH,renderRefreshView,inScrollView}=this.props;
+        let {ifDataEmpty,width:WS,height:HS,pullState,pullAni}=this.state;
+        if(inScrollView){return this.renderListView()}
         return(
-            <View style={[{flex:1},{zIndex:-99999}]} onLayout={this.onLayout}>
-                <Animated.View ref={aniView=>{this.aniView=aniView}} style={[{transform:[{translateY:this.state.pullAni}]},{width:this.state.width,height:this.state.height+this.props.renderRefreshViewH}]}>
-                    {this.props.renderRefreshView?this.props.renderRefreshView(this.state.pullState):this.renderRefreshView()}
-                    <View style={[{width:this.state.width,height:this.state.height}]} {...this.panResponder.panHandlers}>
-                        {this.renderListView()}
-                    </View>
-                </Animated.View>
+            !!this.refreshEnable?
+                <View style={[{flex:1},{zIndex:-99999}]} onLayout={this.onLayout}>
+                    <Animated.View ref={aniView=>{this.aniView=aniView}} style={[{transform:[{translateY:pullAni}]},sf.swh(WS,HS+renderRefreshViewH)]}>
+                        {renderRefreshView?renderRefreshView(pullState):this.renderRefreshView()}
+                        <View style={[sf.swh(WS,HS)]} {...this.panResponder.panHandlers}>
+                            {ifDataEmpty&&renderEmpty?renderEmpty():this.renderListView()}
+                        </View>
+                    </Animated.View>
+                </View>:<View style={[s.f1]}>
+                {ifDataEmpty&&renderEmpty?renderEmpty():this.renderListView()}
             </View>
         );
     }
 
     //ListView/FlatList的渲染
     renderListView=()=>{
-        if(!this.props.isListView){
-            if(this.props.pageLen){
-                return(
-                    <PageList
-                        {...this.props}
-                        style={{}}//虽然不需要样式,但必须加,这样才能在视图更新时调用renderFooter方法
-                        data={this.state.dataSource}
-                        //当接近ListView的底部时的操作
-                        onEndReached={this.willReachEnd}
-                        //当距离底部多少距离时触发上面的这个方法 注意:在FlatList中此参数是一个比值而非像素单位。比如，0.5表示距离内容最底部的距离为当前列表可见长度的一半时触发
-                        onEndReachedThreshold={0.05}
-                        //渲染加载更多时,"加载中"的cell
-                        ListFooterComponent={this.renderFooter}
-                        //渲染每一行的cell怎么样显示
-                        renderItem={this.renderItem}
-                        keyExtractor={(item,index)=>index.toString()}
-                        scrollEnabled={this.state.scrollEnabled}
-                        onScroll={this.onScroll}
-                        ref={list=>{this.list=list}}
-                    />
-                );
-            }else {
-                return(
-                    <PageList
-                        {...this.props}
-                        style={{}}//虽然不需要样式,但必须加,这样才能在视图更新时调用renderFooter方法
-                        data={this.state.dataSource}
-                        //渲染每一行的cell怎么样显示
-                        renderItem={this.renderItem}
-                        ItemSeparatorComponent={this.renderItemS}
-                        keyExtractor={(item,index)=>index.toString()}
-                    />
-                );
+        let {dataSource,scrollEnabled}=this.state;
+        let {isListView,pageLen}=this.props;
+        let {renderFooter,renderRow,renderItem,renderItemS,onEndReached,onScroll}=this;
+        let props={...this.props,style:{}};
+        if(!isListView){
+            props={...props,renderItem,data:dataSource,ItemSeparatorComponent:renderItemS,keyExtractor:(item,index)=>index.toString(),scrollEnabled,onScroll,};
+            if(pageLen){
+                props={...props,onEndReached,onEndReachedThreshold:0.05,ListFooterComponent:renderFooter,ref:list=>{this.list=list}};
             }
         }else {
-            if(this.props.pageLen){
-                return (
-                    <PageList
-                        {...this.props}
-                        style={{}}//虽然不需要样式,但必须加,这样才能在视图更新时调用renderFooter方法
-                        dataSource={this.state.dataSource}
-                        //当接近ListView的底部时的操作
-                        onEndReached={this.willReachEnd}
-                        //当距离底部多少距离时触发上面的这个方法
-                        onEndReachedThreshold={10}
-                        //渲染加载更多时,"加载中"的cell
-                        renderFooter={this.renderFooter}
-                        //渲染每一行的cell怎么样显示
-                        renderRow={this.renderRow}
-                        //允许空的组,加上就行(不用管)
-                        enableEmptySections={true}
-                        scrollEnabled={this.state.scrollEnabled}
-                        onScroll={this.onScroll}
-                        ref={list=>{this.list=list}}
-                    />
-                );
-            }else {
-                return(
-                    <PageList
-                        {...this.props}
-                        style={{}}//虽然不需要样式,但必须加,这样才能在视图更新时调用renderFooter方法
-                        dataSource={this.state.dataSource}
-                        //渲染每一行的cell怎么样显示
-                        renderRow={this.renderRow}
-                        //允许空的组,加上就行(不用管)
-                        enableEmptySections={true}
-                    />
-                );
+            props={...props,dataSource,renderRow,enableEmptySections:true,scrollEnabled,onScroll};
+            if(pageLen){
+                props={...props,onEndReached,onEndReachedThreshold:10,renderFooter,ref:list=>{this.list=list}};
             }
         }
+        return <PageList {...props}/>
     };
 
 
@@ -234,10 +176,11 @@ export default class PageListView extends Component{
             let len=res.length;
             this.updateData(res,len);
         });
+        // console.log(this.state.scrollEnabled);
     }
 
     //当快要接近底部时加载更多
-    willReachEnd=()=> {
+    onEndReached=()=> {
         if (this.state.canLoad && !this.state.isLoadding) {
             this.loadMore();
         }
@@ -255,11 +198,11 @@ export default class PageListView extends Component{
 
     //刷新
     refreshCommon=(res)=>{
+        this.setState({page:2,ifShowRefresh:false,pullState:'noPull'});
+        this.resetAni();
         if(!this.dealWithArr(res)){return}
         let len=res.length;
         this.updateData(res,len);
-        this.setState({page:2,ifShowRefresh:false,pullState:'noPull'});
-        this.resetAni()
     };
     //下拉刷新
     refresh=()=>{
@@ -267,7 +210,7 @@ export default class PageListView extends Component{
             this.refreshCommon(res)
         });
     };
-    //手动刷新
+    //手动刷新(父组件中通过该组件的ref调用)
     manualRefresh=(res)=>{
         this.refreshCommon(res);
     };
@@ -278,6 +221,7 @@ export default class PageListView extends Component{
         if(!isArr){this.setState({ifDataEmpty:true});console.warn('PageListView的数据源需要是一个数组');return false;}
         let len=res.length;
         if(!len){this.setState({ifDataEmpty:true});return false;}
+        this.setState({ifDataEmpty:false});
         return true;
     };
 
@@ -313,8 +257,8 @@ export default class PageListView extends Component{
                 return this.props.renderNoMore();
             }else {
                 return (
-                    <View style={{alignItems: 'center', justifyContent:'center',height:40,width:w,backgroundColor:'#eee'}}>
-                        <Text allowFontScaling={false} style={{color: '#000', fontSize: 12}}>没有更多数据了...</Text>
+                    <View style={[s.c,sf.swh(w,40),sf.sbgc('#eee')]}>
+                        <Text allowFontScaling={false} style={[sf.scolor('#333'),sf.sfontSize(12)]}>没有更多数据了...</Text>
                     </View>
                 );
             }
@@ -323,9 +267,9 @@ export default class PageListView extends Component{
                 return this.props.renderLoadMore();
             }else {
                 return (
-                    <View style={{alignItems: 'center', justifyContent:'center',height:40,width:w,backgroundColor:'#eee',flexDirection:'row'}}>
-                        <ActivityIndicator animating={this.state.isLoadding} color='#333' size='small' style={{marginRight:7}}/>
-                        <Text allowFontScaling={false} style={{color: '#000', fontSize: 12,}}>{this.state.isLoadding?'正在加载中,请稍等':'上拉加载更多'}...</Text>
+                    <View style={[s.c,sf.swh(w,40),sf.sbgc('#eee'),s.row]}>
+                        <ActivityIndicator animating={this.state.isLoadding} color='#333' size='small' style={[sf.smarR(7)]}/>
+                        <Text allowFontScaling={false} style={[sf.scolor('#333'),sf.sfontSize(12)]}>{this.state.isLoadding?'正在加载中,请稍等':'上拉加载更多'}...</Text>
                     </View>
                 );
             }
@@ -363,12 +307,14 @@ export default class PageListView extends Component{
 
     //ListView/FlatList滚动时的方法
     onScroll=(e)=>{
+        if(!this.refreshEnable){return}
         this.lastListY=e.nativeEvent.contentOffset.y;
         this.lastListY<=0&&this.setState({scrollEnabled:false})
     };
+
     //开始移动时判断是否设置当前的View为手势响应者
     onMoveShouldSetPanResponder=(e,gesture)=> {
-        if(!this.props.pageLen)return false;
+        // if(!this.props.pageLen)return false;
         let {dy}=gesture;
         let bool;
         if(dy<0){//向上滑
@@ -429,6 +375,7 @@ export default class PageListView extends Component{
 
     //重置位置 refreshView刚好隐藏的位置
     resetAni=()=>{
+        if(!this.refreshEnable){return}
         this.setState({pullState:'noPull'});
         // this.state.pullAni.setValue(this.defaultXY);
         this.resetList();
@@ -461,11 +408,24 @@ export default class PageListView extends Component{
     //渲染默认的下拉刷新View
     renderRefreshView=()=>{
         return(
-            <View style={{height:60,width:w,justifyContent:'center',alignItems:'center',backgroundColor:'#eee',flexDirection:'row'}}>
-                <ActivityIndicator animating={this.state.pullState==='pullRelease'} color='#333' size='small' style={{marginRight:7}}/>
+            <View style={[sf.swh(w,60),s.c,sf.sbgc('#eee'),s.row]}>
+                <ActivityIndicator animating={this.state.pullState==='pullRelease'} color='#333' size='small' style={[sf.smarR(7)]}/>
                 <Text allowFontScaling={false} style={{color:'#333',fontSize:15}}>{pullStateTextArr[this.state.pullState]}</Text>
             </View>
         );
     };
 
 }
+
+/*
+ 待解决问题:
+     1.点击无响应:部分手机真机上点击不能触发onPress事件的bug
+         bug可能出现出现原因:
+             1.应该是当界面滚动到最上方时外层View变成了手势响应者,(此时ListView和FlatList的"scrollEnabled"为false),此时当点击TouchableOpacity的组件时,点击事件被拦截成了手势响应者View的移动事件,所以没有触发onPress事件
+             2.因为模拟器上都能正常运行,而是部分手机上会出现这个问题.所以也有可能是因为两者运行的js解析器不一样的关系.
+                 开发过程中使用 Chrome 调试时，所有的 JavaScript 代码都运行在 Chrome 中，并且通过 WebSocket 与原生代码通信。此时的运行环境是[V8 引擎]
+                 而在手机上时React Native 使用的是[JavaScriptCore],也就是 Safari 所使用的 JavaScript 引擎。
+         解决方法:
+            尝试1(失败):将"onStartShouldSetPanResponderCapture"设置为false,这样View刚被触碰时就不会成为手势相应者,便可以实现点击事件."onStartShouldSetPanResponderCapture"会在"捕获期"触发事件(即在点击区域的子组件也有手势事件时也会触发该方法),而"onStartShouldSetPanResponder"方法只有在点击区域的子组件没有手势事件时才触发
+     2.修复界面其他组件尺寸改变时,该组件没有跟着一起改变自适应尺寸
+ */

@@ -1,10 +1,13 @@
 {
   "name": "react-native-page-listview",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "对ListView/FlatList的封装,可以很方便的分页加载网络数据,还支持自定义下拉刷新View和上拉加载更多的View",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "react-native-gp-style": "^1.0.1"
   },
   "keywords": [
     "react",
@@ -29,6 +32,6 @@
     "type": "git",
     "url": "https://github.com/geek-prince/react-native-page-listview.git"
   },
-  "author": "geekPrince",
+  "author": "geek-prince",
   "license": "MIT"
 }
